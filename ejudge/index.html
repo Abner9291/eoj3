@@ -9,7 +9,7 @@
         
         <link rel="shortcut icon" href="../img/favicon.ico">
 
-	<title>简介 - EOJ3</title>
+	<title>简介 - EOJ Docs</title>
 
         <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
         <link href="../css/font-awesome-4.0.3.css" rel="stylesheet">
@@ -41,7 +41,7 @@
             </button>
 
             <!-- Main title -->
-            <a class="navbar-brand" href="..">EOJ3</a>
+            <a class="navbar-brand" href="..">EOJ Docs</a>
         </div>
 
         <!-- Expanded navigation -->
@@ -117,11 +117,13 @@
         
             <li><a href="#_2">判题服务器设计</a></li>
         
-            <li><a href="#_3">文档局限性</a></li>
+            <li><a href="#_3">支持的语言</a></li>
         
-            <li><a href="#_4">安装</a></li>
+            <li><a href="#_4">文档局限性</a></li>
         
-            <li><a href="#_7">致谢</a></li>
+            <li><a href="#_5">安装（待填）</a></li>
+        
+            <li><a href="#_8">致谢</a></li>
         
     
     </ul>
@@ -140,12 +142,13 @@
 <li>使用 Docker 急速部署，方便重启。</li>
 <li>判题服务提供了 socket.io 和 RESTful API 两种方式，方便判题进程的即时响应及更新。</li>
 <li>支持 generator, validator, stress test 等测试工具的运行，为 Polygon system 提供支持（开发中）。</li>
+<li>由于在出题过程中程序运行不受限制，「非常危险」，建议采用出题用服务器与主判题服务器相隔离的办法。运行两个服务器，互不干涉。也不用担心泄露数据。</li>
 </ul>
 <h2 id="_2">判题服务器设计</h2>
 <p>为方便读者理解，这里对每个类的设计初衷进行解释。</p>
 <h3 id="case">测试用例 (Case)</h3>
-<p>每一个测试用例都有一个<strong>指纹</strong> (fingerprint)，这一指纹在上传测试用例的时候就已经指定。
-需要注意的是，指定指纹的时候应尽可能避免使用 32 位纯字母指纹，避免冲突（虽然冲突概率非常低）。</p>
+<p>每一个测试用例都有一个<strong>指纹</strong> (fingerprint)，这一指纹在上传测试用例的时候就已经指定。请确保指纹的安全性，指纹不应该是由用户指定的，应避免出现 <code>../../finger</code> 这样的情况。
+同时需要注意的是，指定指纹的时候应尽可能避免使用 32 位纯字母指纹，避免冲突（虽然冲突概率非常低）。</p>
 <p>测试用例含 input 和 output，分别为输入和输出。如果只有 input，那就不能称为测试用例，即使上传 input 也只会带来异常。
 要根据 input 生成 output 需要调用另外的 API。</p>
 <h3 id="submission">程序 (Submission)</h3>
@@ -166,13 +169,45 @@
 <p>详细用法参见 EOJ Polygon 的介绍。</p>
 <h3 id="caserunner">运行 (CaseRunner)</h3>
 <p>一个组合了测试用例、提交程序、测试程序的类，提供方便的运行功能，并且可以指定输出的结果（返回什么）。</p>
-<h2 id="_3">文档局限性</h2>
+<h3 id="verdict">判定结果 (Verdict)</h3>
+<ul>
+<li>WAITING = -3</li>
+<li>JUDGING = -2</li>
+<li>WRONG_ANSWER = -1</li>
+<li>ACCEPTED = 0</li>
+<li>TIME_LIMIT_EXCEEDED = 1</li>
+<li>IDLENESS_LIMIT_EXCEEDED = 2</li>
+<li>MEMORY_LIMIT_EXCEEDED = 3</li>
+<li>RUNTIME_ERROR = 4</li>
+<li>SYSTEM_ERROR = 5</li>
+<li>COMPILE_ERROR = 6</li>
+<li>JUDGE_ERROR = 11</li>
+</ul>
+<h2 id="_3">支持的语言</h2>
+<p>括号内是在 <code>lang</code> 字段中填写的。</p>
+<ul>
+<li>C (c)</li>
+<li>C++ 11 (cpp)</li>
+<li>C++ 14 (cc14)</li>
+<li>C# (cs)</li>
+<li>Pascal (pas)</li>
+<li>Java (java)</li>
+<li>Python 2 (py2)</li>
+<li>Python 3 (python)</li>
+<li>PHP (php)</li>
+<li>Rust (rs)</li>
+<li>Haskell (hs)</li>
+<li>Javascript (js)</li>
+</ul>
+<p>（部分语言命名诡异是为了确保向下兼容性。）</p>
+<h2 id="_4">文档局限性</h2>
 <p>这里的文档面向正在开发中的 ejudge v2。v1（目前 master 分支）的文档不再更新。</p>
-<h2 id="_4">安装</h2>
-<h3 id="_5">部署</h3>
-<h3 id="_6">开发</h3>
+<h2 id="_5">安装（待填）</h2>
+<h3 id="_6">部署</h3>
+<h3 id="_7">开发</h3>
 <p><code>python3 setup.py build_ext --inplace</code></p>
-<h2 id="_7">致谢</h2>
+<p><code>celery worker -A handler --loglevel=info</code></p>
+<h2 id="_8">致谢</h2>
 <p>eJudge 的设计借（照）鉴（抄）了 <a href="https://github.com/QingdaoU/Judger/tree/newnew">QDUOJ Judger</a> 中对 seccomp 的使用，
 专业出题网站 <a href="https://polygon.codeforces.com/">Codeforces Polygon</a> 中对测试程序的使用，
 开源项目 <a href="https://github.com/MikeMirzayanov/testlib">testlib</a>

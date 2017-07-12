@@ -9,7 +9,7 @@
         
         <link rel="shortcut icon" href="../../img/favicon.ico">
 
-	<title>API - EOJ3</title>
+	<title>API - EOJ Docs</title>
 
         <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
         <link href="../../css/font-awesome-4.0.3.css" rel="stylesheet">
@@ -41,7 +41,7 @@
             </button>
 
             <!-- Main title -->
-            <a class="navbar-brand" href="../..">EOJ3</a>
+            <a class="navbar-brand" href="../..">EOJ Docs</a>
         </div>
 
         <!-- Expanded navigation -->
@@ -129,13 +129,12 @@
 <ul>
 <li><code>GET /reset</code> 配置页面（直接使用浏览器访问）</li>
 <li><code>POST /upload/case/:fid/:io</code> 上传测试用例，永久保存</li>
-<li><code>POST /upload/checker</code> 上传输出检查器，永久保存</li>
-<li><code>POST /upload/interactor</code> 上传交互程序，永久保存</li>
+<li><code>POST /upload/:type</code> 上传测试程序，永久保存</li>
 <li><code>DELETE /delete/case/:fid</code> 删除指定的测试用例（不建议）</li>
-<li><code>DELETE /delete/checker/:fid</code> 删除指定的输出检查器（不建议）</li>
-<li><code>DELETE /delete/interactor/:fid</code> 删除指定的交互程序（不建议）</li>
+<li><code>DELETE /delete/:type/:fid</code> 删除测试程序（不建议）</li>
 <li><code>POST /generate</code> 生成输入</li>
 <li><code>POST /validate</code> 验证输入</li>
+<li><code>POST /stress</code> 压力测试（用于测试某一可能错误的程序的正确性）</li>
 <li><code>POST /judge/result</code> 提交一组判题（往往用于测试）</li>
 <li><code>POST /judge/output</code> 根据输入和程序，生成输出</li>
 <li><code>POST /judge/sandbox</code> 返回程序运行的原始沙盒结果</li>
@@ -144,10 +143,349 @@
 <li><code>POST /judge</code> 提交判题</li>
 </ul>
 <p>另有：socket.io <code>judge</code> 事件用于提交判题，格式与 <code>POST /judge</code> 相同。</p>
-<p>注：不建议删除的原因是：容易造成业务逻辑混乱。</p>
+<p>注：不建议删除的原因是：容易造成业务逻辑混乱。而且大多数提交程序占用空间并不大，定期清理即可。</p>
 <h2 id="restful-api">RESTful API</h2>
+<ul>
+<li>除上传测试用例需要直接将文件放在 POST 的数据中之外，其余 API 全部采用 JSON。Response 也全部使用 JSON。</li>
+<li>auth 请使用指定的用户名密码。可在 <code>/reset</code> 页面查询和设置。初始密码为空。</li>
+</ul>
+<p>示例：</p>
+<pre><code class="python">import requests
+token = ('ejudge', 'password')  # token is a tuple
+data = {'fingerprint': '123123'}  # data is a dict
+response = requests.post(url, json=json.dumps(data), auth=token).json()  # response is a dict
+</code></pre>
+
+<p>回复 JSON 中，一般有：</p>
+<ul>
+<li><code>status</code>: <code>received</code> 或 <code>reject</code>。</li>
+<li><code>message</code> (可能没有)<ul>
+<li>如果是 <code>reject</code>，通常是拒绝的原因，如果出错，通常有 traceback。</li>
+<li>如果是 <code>received</code>，可能有结果信息。</li>
+</ul>
+</li>
+</ul>
+<p><code>status</code> 和 <code>message</code> 有特殊含义的，会在 API 中注明。会返回其他键值对的，也会在 API 中注明。否则就按照上述标准。</p>
+<p>在文档中，字段名的含义是统一的。一旦解释过一次，下面的解释将从简处理。</p>
+<h3 id="post-uploadcasefidio"><code>POST /upload/case/:fid/:io</code></h3>
+<ul>
+<li><code>:fid</code> 测试用例指纹。</li>
+<li><code>:io</code> 是输入还是输出。取值：<ul>
+<li><code>input</code> 表示这是输入文件</li>
+<li><code>output</code> 表示这是输出文件</li>
+</ul>
+</li>
+<li>上传测试用例的二进制形式。</li>
+</ul>
+<p>示例：</p>
+<pre><code class="python">url = 'http://example.com/upload/case/ff123123/input'
+result = requests.post(url, data=open(input_file, 'rb').read(), auth=token).json()
+</code></pre>
+
+<h3 id="post-uploadtype"><code>POST /upload/:type</code></h3>
+<ul>
+<li><code>:type</code> 可以是 <code>checker</code>, <code>validator</code>, <code>generator</code>, <code>interactor</code>。</li>
+<li><code>fingerprint</code> 指纹</li>
+<li><code>lang</code> 语言，必须是在 <code>lang.yaml</code> 中支持的语言</li>
+<li><code>code</code> 代码（文本）</li>
+</ul>
+<p>示例：</p>
+<pre><code class="json">{
+  &quot;fingerprint&quot;: &quot;23332333&quot;,
+  &quot;lang&quot;: &quot;cc11&quot;,
+  &quot;code&quot;: &quot;#include &lt;iostream&gt; ....&quot;
+}
+</code></pre>
+
+<h3 id="post-generate"><code>POST /generate</code></h3>
+<ul>
+<li><code>fingerprint</code></li>
+<li><code>lang</code></li>
+<li><code>code</code></li>
+<li><code>max_time</code> 最长运行时间（浮点数，单位是秒）</li>
+<li><code>max_memory</code> 最大运行内存（浮点数，单位是 MB）</li>
+<li><code>command_line_args</code> 本次生成所使用的命令行参数（必须是由字符串组成的列表，可以为空）</li>
+</ul>
+<p><strong>注意：如果提交的程序已经 upload 过，那么该程序可能不会重复编译。</strong></p>
+<p>示例：</p>
+<pre><code class="json">{
+  &quot;fingerprint&quot;: &quot;23332333&quot;,
+  &quot;lang&quot;: &quot;cc11&quot;,
+  &quot;code&quot;: &quot;#include &lt;iostream&gt; ....&quot;,
+  &quot;max_time&quot;: 1.0,
+  &quot;max_memory&quot;: 256,
+  &quot;command_line_args&quot;: [&quot;1&quot;, &quot;5&quot;, &quot;90&quot;]
+}
+</code></pre>
+
+<p>响应（成功）：</p>
+<pre><code class="json">{
+  &quot;status&quot;: &quot;received&quot;,
+  &quot;output&quot;: &quot;MTAgMTAgMjAKMyA4CjYgNgo1IDIKNSA2CjQgOQoyIDQKMTAgMwoyIDgKMyA5CjkgMwo4IDYKOCAxMAo1IDgKNyA0CjQgNAozIDYKMTAgMgo3IDcKMyAxCjIgMwo=&quot;
+}
+</code></pre>
+
+<p>注意字段名称是 <code>output</code>。
+<strong>响应的生成器输出是 base64 编码的</strong>。使用 <code>base64.b64decode(encoded).decode()</code> 来解码。</p>
+<h3 id="post-validate"><code>POST /validate</code></h3>
+<ul>
+<li><code>fingerprint</code></li>
+<li><code>lang</code></li>
+<li><code>code</code></li>
+<li><code>max_time</code></li>
+<li><code>max_memory</code></li>
+<li><code>input</code> 输入数据，base64，可以使用 <code>base64.b64encode(binary_data).decode()</code> 来编码。</li>
+</ul>
+<pre><code class="json">{
+  &quot;fingerprint&quot;: &quot;23332333&quot;,
+  &quot;lang&quot;: &quot;cc11&quot;,
+  &quot;code&quot;: &quot;#include &lt;iostream&gt; ....&quot;,
+  &quot;max_time&quot;: 1.0,
+  &quot;max_memory&quot;: 256,
+  &quot;input&quot;: &quot;MTAgMTAgMjAKMyA4CjYgNgo1IDIKNSA2CjQgOQoyIDQKMTAgMwoyIDgKMyA5CjkgMwo4IDYKOCAxMAo1IDgKNyA0CjQgNAozIDYKMTAgMgo3IDcKMyAxCjIgMwo=&quot;
+}
+</code></pre>
+
+<p>响应（成功）：</p>
+<pre><code class="json">{
+  &quot;verdict&quot;: -1,
+  &quot;status&quot;: &quot;received&quot;,
+  &quot;message&quot;: &quot;&quot;
+}
+</code></pre>
+
+<p>（这里的 -1 表示不通过）</p>
+<h3 id="post-stress"><code>POST /stress</code></h3>
+<ul>
+<li><code>std</code> 对象，含 <code>fingerprint</code>, <code>lang</code>, <code>code</code> 三个字段，表示标程。</li>
+<li><code>submission</code> 对象，表示可能是错误的程序。</li>
+<li><code>generator</code> 对象，表示数据生成器。</li>
+<li><code>command_line_args_list</code> <strong>嵌套列表</strong>，表示数据生成器要循环执行使用的一系列参数。这些参数将从第一个开始逐一使用，用完回到第一个循环使用。</li>
+<li><code>max_time</code></li>
+<li><code>max_memory</code></li>
+<li><code>max_sum_time</code> 压力测试总时间，单位是秒</li>
+<li><code>checker</code> 对象，输出验证程序</li>
+<li><code>interactor</code> 可选。对象，交互程序</li>
+<li><code>max_generate</code> 可选。最多获得多少组错误数据（默认为 5）</li>
+</ul>
+<p>示例：</p>
+<pre><code class="json">{
+  &quot;std&quot;: {
+    &quot;lang&quot;: &quot;cpp&quot;,
+    &quot;fingerprint&quot;: &quot;test_KKMoKBcaSjpEjCxdNpKyaJHrdWmTZfFd&quot;,
+    &quot;code&quot;: &quot;#include &lt;cmath&gt;\n#includ...&quot;
+  },
+    &quot;submission&quot;: {
+    &quot;lang&quot;: &quot;python&quot;,
+    &quot;fingerprint&quot;: &quot;test_JBUfXirWpDgsNBXMhYDgjmBOwARvHLYZ&quot;,
+    &quot;code&quot;: &quot;a, b = map(int, input().split())\nif a % 2 == 0:\n    print(a + b + 1)\nelse:\n    print(a + b)&quot;
+  },
+  &quot;generator&quot;: {
+    &quot;lang&quot;: &quot;python&quot;,
+    &quot;fingerprint&quot;: &quot;test_tKRaqNvnRbZwoUsNVITjrwZgENyShwLq&quot;,
+    &quot;code&quot;: &quot;import random\nprint(random.randint(1, 100), random.randint(1, 100))&quot;
+  },
+  &quot;max_time&quot;: 1,
+  &quot;max_sum_time&quot;: 20,
+  &quot;max_memory&quot;: 128,
+  &quot;checker&quot;: {
+    &quot;lang&quot;: &quot;cpp&quot;,
+    &quot;fingerprint&quot;: &quot;test_DAcejcYaQGcspoEhEkSYjwtQssiKoZsn&quot;,
+    &quot;code&quot;: &quot;#include ...&quot;
+  },
+  &quot;command_line_args_list&quot;: [
+    []
+  ]
+}
+</code></pre>
+
+<p>响应：</p>
+<pre><code class="json">{
+  &quot;output&quot;: [&quot;MTIgNAo=&quot;, &quot;NTYgNjYK&quot;, &quot;ODYgMzUK&quot;, &quot;NTIgOTgK&quot;, &quot;NCAzMAo=&quot;],
+  &quot;status&quot;: &quot;received&quot;
+}
+</code></pre>
+
+<p><code>output</code> 为出现错误的数据，最多 <code>max_generate</code> 组。</p>
+<h3 id="post-judgeoutput-post-judgesandbox"><code>POST /judge/output</code>, <code>POST /judge/sandbox</code></h3>
+<ul>
+<li><code>submission</code> 对象，表示提交程序。</li>
+<li><code>max_time</code></li>
+<li><code>max_memory</code></li>
+<li><code>input</code> 输入数据，base64。</li>
+<li><code>interactor</code> 可选，如果是交互程序，需指定。</li>
+</ul>
+<p>示例：</p>
+<pre><code class="json">{
+  &quot;input&quot;: &quot;MSAy&quot;,
+  &quot;max_time&quot;: 1,
+  &quot;max_memory&quot;: 128,
+  &quot;submission&quot;: {
+    &quot;lang&quot;: &quot;cpp&quot;,
+    &quot;fingerprint&quot;: &quot;test_RHEstOxREhabNQSInDaNqZbJlJoDGruz&quot;,
+    &quot;code&quot;: &quot;#include &lt;cmath&gt;\n#include &lt;cstdio...&quot;
+  }
+}
+</code></pre>
+
+<p>响应：</p>
+<pre><code class="json">{
+  &quot;output&quot;: &quot;Mwo=&quot;,
+  &quot;status&quot;: &quot;received&quot;
+}
+</code></pre>
+
+<p>sandbox 请求响应：</p>
+<pre><code class="json">{
+  &quot;time&quot;: 0.0,
+  &quot;exit_code&quot;: 0,
+  &quot;verdict&quot;: 0,
+  &quot;status&quot;: &quot;received&quot;,
+  &quot;memory&quot;: 40.71875,
+  &quot;signal&quot;: 0
+}
+</code></pre>
+
+<h3 id="post-judgechecker-post-judgeinteractor"><code>POST /judge/checker</code>, <code>POST /judge/interactor</code></h3>
+<ul>
+<li><code>submission</code></li>
+<li><code>max_time</code></li>
+<li><code>max_memory</code></li>
+<li><code>input</code></li>
+<li><code>output</code> 与 <code>input</code> 同理。</li>
+<li><code>checker</code> 对象，指定输出检查。</li>
+<li><code>interactor</code> 可选。</li>
+</ul>
+<p>示例：</p>
+<pre><code class="json">{
+  &quot;input&quot;: &quot;MSAy&quot;,
+  &quot;output&quot;: &quot;Mw==&quot;
+  &quot;max_time&quot;: 1,
+  &quot;max_memory&quot;: 128,
+  &quot;submission&quot;: {
+    &quot;lang&quot;: &quot;cpp&quot;,
+    &quot;fingerprint&quot;: &quot;test_RHEstOxREhabNQSInDaNqZbJlJoDGruz&quot;,
+    &quot;code&quot;: &quot;#include &lt;cmath&gt;\n#include &lt;cstdio...&quot;
+  },
+  &quot;checker&quot;: {
+    &quot;lang&quot;: &quot;cpp&quot;,
+    &quot;fingerprint&quot;: &quot;test_DAcejcYaQGcspoEhEkSYjwtQssiKoZsn&quot;,
+    &quot;code&quot;: &quot;#include ...&quot;
+  }
+}
+</code></pre>
+
+<p>响应：</p>
+<pre><code class="json">{
+  &quot;time&quot;: 0.0,
+  &quot;status&quot;: &quot;received&quot;,
+  &quot;verdict&quot;: 0,
+  &quot;message&quot;: &quot;1 number(s): \&quot;3\&quot;&quot;
+}
+</code></pre>
+
+<p>对于 <code>interactor</code>，<code>checker</code>, <code>output</code> 不是必选参数。返回结果与 <code>checker</code> 类似：</p>
+<pre><code class="json">{
+  &quot;verdict&quot;: 0,
+  &quot;status&quot;: &quot;received&quot;,
+  &quot;message&quot;: &quot;1 queries processed&quot;
+}
+</code></pre>
+
+<h3 id="post-judgeresult"><code>POST /judge/result</code></h3>
+<ul>
+<li><code>submission</code></li>
+<li><code>max_time</code></li>
+<li><code>max_memory</code></li>
+<li><code>input</code></li>
+<li><code>output</code></li>
+<li><code>checker</code></li>
+<li><code>interactor</code></li>
+</ul>
+<p>请求示例略。</p>
+<p>返回结果规则如下：</p>
+<ul>
+<li>如果 <code>verdict</code> 是 <code>ACCEPTED</code> (0)，有一个字段名为 <code>time</code>，记录程序运行时间。</li>
+<li>如果 <code>verdict</code> 是 <code>RUNTIME_ERROR</code> (4)，有一个字段名为 <code>message</code>，记录出现错误的信号 (signal) 类型。</li>
+<li>如果 <code>verdict</code> 是 <code>COMPILE_ERROR</code> (6)，<code>message</code> 字段中记录的是编译错误信息。</li>
+<li>否则，<code>message</code> 中一定是 traceback，此时可能没有 <code>verdict</code>。</li>
+</ul>
 <h3 id="post-judge"><code>POST /judge</code></h3>
-<h2 id="socketio">Socket.io</h2></div>
+<ul>
+<li><code>code</code></li>
+<li><code>fingerprint</code></li>
+<li><code>max_time</code></li>
+<li><code>max_memory</code></li>
+<li><code>lang</code></li>
+<li><code>run_until_complete</code> 布尔值，默认为 False，若为 True，即使中间的测试数据出错也会一直跑下去，用于 OI 赛制等。</li>
+<li><code>cases</code> 有序列表，测试用例指纹。返回结果也按照这个顺序</li>
+<li><code>checker</code> 输出检查程序指纹</li>
+<li><code>interactor</code> 交互题中的交互程序指纹</li>
+</ul>
+<p>（最后几项必须预先上传）</p>
+<pre><code class="json">{
+  &quot;code&quot;: &quot;...&quot;,
+  &quot;fingerprint&quot;: &quot;test_HsgxUjDlvjzLxuaWWcNMlVzAauCWsmGE&quot;,
+  &quot;max_time&quot;: 1,
+  &quot;max_memory&quot;: 128,
+  &quot;lang&quot;: &quot;cpp&quot;,
+  &quot;cases&quot;: [
+    &quot;test_rZiIjfMTkNFGKiIMZtsQaOHMrUKOyMNa&quot;,
+    &quot;test_gsjwbFPcZsezMCAFiGsbUbFecHAnVcjH&quot;,
+    &quot;test_hviQVygNCitYmGTNJkvfOCZFRvPdTLBx&quot;
+  ],
+  &quot;checker&quot;: &quot;test_anJkjSdGIxBzaMSJwqXSbIWeIeBkxJLi&quot;
+}
+</code></pre>
+
+<p>响应：</p>
+<pre><code class="json">{
+  &quot;detail&quot;: [
+    {&quot;verdict&quot;: 0, &quot;time&quot;: 0.0},
+    {&quot;verdict&quot;: 0, &quot;time&quot;: 0.0},
+    {&quot;verdict&quot;: 0, &quot;time&quot;: 0.0}
+  ],
+  &quot;verdict&quot;: 0,
+  &quot;status&quot;: &quot;received&quot;
+}
+</code></pre>
+
+<p>包括一个每次的判定结果（结果格式见 <code>POST /judge/result</code>），一个总判决。总判决由第一个出错（不是 0）的判决决定。</p>
+<p>若不幸 Compile Error，总 <code>message</code> 中会有编译错误信息：</p>
+<pre><code class="json">{
+  &quot;verdict&quot;: 6,
+  &quot;message&quot;: &quot;/tmp/pycharm_project_...tOQjlGDTCQnEKQ&quot;,
+  &quot;detail&quot;: [],
+  &quot;status&quot;: &quot;received&quot;
+}
+</code></pre>
+
+<p>但对于 Runtime Error 的情况，错误信息是在 <code>detail</code> 中的每一次运行内的。</p>
+<h2 id="socketio">Socket.io</h2>
+<p>对于 socket.io，提供了 <code>judge</code> 事件，也就是上面的 <code>/judge</code> API。传入 JSON 几乎相同，但需要手动添加验证信息：</p>
+<pre><code class="python">data.update(username=token[0], password=token[1])
+</code></pre>
+
+<p>你可能需要监听 <code>judge_reply</code> 事件，因为回复都是这里来的。</p>
+<p>由于 Python 对于 socket.io 客户端的支持不佳，所以可能要用到不大好用的 socketio-client。然后可以直接 emit 字典哦。</p>
+<pre><code class="python">from socketIO_client import SocketIO, LoggingNamespace
+result = None
+
+def callback(*args):
+    nonlocal news_length, result
+    body = args[0]
+    if body.get('verdict') != Verdict.JUDGING.value:
+        result = body
+    # emit to user
+
+with SocketIO('localhost', 5000, LoggingNamespace) as socketIO:
+    socketIO.emit('judge', data)
+    socketIO.on('judge_reply', callback)
+    while not result:
+        socketIO.wait(seconds=1)
+</code></pre>
+
+<p>推荐的使用方案是，先使用 socket.io 进行判题，若失败，则回滚到 requests 请求。</p></div>
         </div>
 
         <footer class="col-md-12">
