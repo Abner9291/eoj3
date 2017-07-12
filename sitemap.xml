@@ -9,4 +9,26 @@
     </url>
     
 
+    
+        
+    <url>
+     <loc>/ejudge/</loc>
+     <lastmod>2017-07-12</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>/ejudge/api/</loc>
+     <lastmod>2017-07-12</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>/ejudge/config/</loc>
+     <lastmod>2017-07-12</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    
+
 </urlset>
