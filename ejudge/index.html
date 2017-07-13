@@ -211,7 +211,7 @@
 <p>外网：<code>sudo docker pull registry.cn-hangzhou.aliyuncs.com/ultmaster/ejudge:v2</code></p>
 <p>阿里云内网：<code>sudo docker pull registry-internal.cn-hangzhou.aliyuncs.com/ultmaster/ejudge:v2</code></p>
 <p>运行：<code>sudo docker run -d -v /your/folder/of/ejudge:/ejudge -p YOUR_RORT:5000 registry-internal.cn-hangzhou.aliyuncs.com/ultmaster/ejudge:v2</code></p>
-<p>主目录 ejudge 是通过数据卷的形式挂载在容器内的，所以可以通过 <code>docker inspect YOUR_DOCKER_ID</code> 的 mount 下的地址找到。找到该目录的意义，
+<p>主目录 ejudge 是通过数据卷的形式挂载在容器内的，所以可以通过 <code>docker inspect -f {{.Mounts}} YOUR_DOCKER_ID</code> 的 mount 下的地址找到。找到该目录的意义，
 就在于该目录下的 <code>/run</code> 便是所有数据的存放、程序运行的位置，另外 <code>/run/log</code> 下是程序运行日志。可以加个软链接来快速访问。如果有更简洁的方法，欢迎补充！</p>
 <h3 id="_7">开发</h3>
 <ul>
