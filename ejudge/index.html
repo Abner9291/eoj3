@@ -113,15 +113,15 @@
     
         <li class="main active"><a href="#ejudge">eJudge</a></li>
         
-            <li><a href="#_1">简介</a></li>
+            <li><a href="#_1">文档局限性</a></li>
         
-            <li><a href="#_2">判题服务器设计</a></li>
+            <li><a href="#_2">简介</a></li>
         
-            <li><a href="#_3">支持的语言</a></li>
+            <li><a href="#_3">判题服务器设计</a></li>
         
-            <li><a href="#_4">文档局限性</a></li>
+            <li><a href="#_4">支持的语言</a></li>
         
-            <li><a href="#_5">安装（待填）</a></li>
+            <li><a href="#_5">安装</a></li>
         
             <li><a href="#_8">致谢</a></li>
         
@@ -131,7 +131,9 @@
             <div class="col-md-9" role="main">
 
 <h1 id="ejudge">eJudge</h1>
-<h2 id="_1">简介</h2>
+<h2 id="_1">文档局限性</h2>
+<p>这里的文档面向正在开发中的 ejudge v2。v1（目前 master 分支）的文档不再更新。</p>
+<h2 id="_2">简介</h2>
 <p>eJudge 是 eoj3 捆绑销售的判题服务器。主要职责是提供判题服务（废话）。设计判题服务器的主要意图有二：</p>
 <ul>
 <li>负载均衡：可以根据比赛需求添加减少判题服务器，在节省资源的同时，保证判题速度。</li>
@@ -144,7 +146,7 @@
 <li>支持 generator, validator, stress test 等测试工具的运行，为 Polygon system 提供支持（开发中）。</li>
 <li>由于在出题过程中程序运行不受限制，「非常危险」，建议采用出题用服务器与主判题服务器相隔离的办法。运行两个服务器，互不干涉。也不用担心泄露数据。</li>
 </ul>
-<h2 id="_2">判题服务器设计</h2>
+<h2 id="_3">判题服务器设计</h2>
 <p>为方便读者理解，这里对每个类的设计初衷进行解释。</p>
 <h3 id="case">测试用例 (Case)</h3>
 <p>每一个测试用例都有一个<strong>指纹</strong> (fingerprint)，这一指纹在上传测试用例的时候就已经指定。请确保指纹的安全性，指纹不应该是由用户指定的，应避免出现 <code>../../finger</code> 这样的情况。
@@ -183,7 +185,7 @@
 <li>COMPILE_ERROR = 6</li>
 <li>JUDGE_ERROR = 11</li>
 </ul>
-<h2 id="_3">支持的语言</h2>
+<h2 id="_4">支持的语言</h2>
 <p>括号内是在 <code>lang</code> 字段中填写的。</p>
 <ul>
 <li>C (c)</li>
@@ -194,20 +196,60 @@
 <li>Java (java)</li>
 <li>Python 2 (py2)</li>
 <li>Python 3 (python)</li>
+<li>Pypy (pypy)</li>
+<li>Perl (perl)</li>
+<li>OCaml (ocaml)</li>
 <li>PHP (php)</li>
 <li>Rust (rs)</li>
 <li>Haskell (hs)</li>
 <li>Javascript (js)</li>
 </ul>
 <p>（部分语言命名诡异是为了确保向下兼容性。）</p>
-<h2 id="_4">文档局限性</h2>
-<p>这里的文档面向正在开发中的 ejudge v2。v1（目前 master 分支）的文档不再更新。</p>
-<h2 id="_5">安装（待填）</h2>
+<h2 id="_5">安装</h2>
 <h3 id="_6">部署</h3>
+<p>Docker：<code>curl -sSL http://acs-public-mirror.oss-cn-hangzhou.aliyuncs.com/docker-engine/internet | sh -</code></p>
+<p>外网：<code>sudo docker pull registry.cn-hangzhou.aliyuncs.com/ultmaster/ejudge:v2</code></p>
+<p>阿里云内网：<code>sudo docker pull registry-internal.cn-hangzhou.aliyuncs.com/ultmaster/ejudge:v2</code></p>
+<p>运行：<code>sudo docker run -d -v /your/folder/of/ejudge:/ejudge -p YOUR_RORT:5000 registry-internal.cn-hangzhou.aliyuncs.com/ultmaster/ejudge:v2</code></p>
+<p>主目录 ejudge 是通过数据卷的形式挂载在容器内的，所以可以通过 <code>docker inspect YOUR_DOCKER_ID</code> 的 mount 下的地址找到。找到该目录的意义，
+就在于该目录下的 <code>/run</code> 便是所有数据的存放、程序运行的位置，另外 <code>/run/log</code> 下是程序运行日志。可以加个软链接来快速访问。如果有更简洁的方法，欢迎补充！</p>
 <h3 id="_7">开发</h3>
-<p><code>python3 setup.py build_ext --inplace</code></p>
-<p><code>celery worker -A handler --loglevel=info</code></p>
+<ul>
+<li>
+<p>先创建一个用户：<code>useradd -r compiler</code></p>
+</li>
+<li>
+<p>拷贝 java policy：<code>cp sandbox/java_policy /etc/</code></p>
+</li>
+<li>
+<p>安装依赖包（见 Dockerfile）：<code>pip3 install -r requirements.txt</code>, <code>apt-get -y install gcc g++ ...</code></p>
+</li>
+<li>
+<p>编译 Cython：<code>python3 setup.py build_ext --inplace</code></p>
+</li>
+<li>
+<p>创建目录：<code>mkdir -p run/data run/sub run/log</code></p>
+</li>
+</ul>
+<p>然后就从运行 <code>tests</code> 中的测试开始吧。注意在运行 <code>flask</code> 测试前要先运行 flask 服务器和 celery：</p>
+<ul>
+<li>
+<p>运行 redis：<code>service redis-server start</code></p>
+</li>
+<li>
+<p>运行 celery：</p>
+<ul>
+<li>阻塞：<code>celery worker -A handler --loglevel=info</code></li>
+<li>守护：<code>celery multi start worker -A handler</code></li>
+</ul>
+</li>
+<li>
+<p>运行 flask：<code>./flask_server.py</code></p>
+</li>
+</ul>
+<p>在生产环境下的命令见 <code>run.sh</code>。</p>
 <h2 id="_8">致谢</h2>
+<p>eJudge 由 eoj3 团队开发。</p>
 <p>eJudge 的设计借（照）鉴（抄）了 <a href="https://github.com/QingdaoU/Judger/tree/newnew">QDUOJ Judger</a> 中对 seccomp 的使用，
 专业出题网站 <a href="https://polygon.codeforces.com/">Codeforces Polygon</a> 中对测试程序的使用，
 开源项目 <a href="https://github.com/MikeMirzayanov/testlib">testlib</a>

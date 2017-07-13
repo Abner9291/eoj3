@@ -125,12 +125,25 @@
 <h1 id="_1">配置</h1>
 <h2 id="_2">默认配置</h2>
 <ul>
-<li>运行相关设置（更改以下设置需要重启服务器）</li>
+<li>
+<p>初始密码：</p>
+<ul>
+<li>用户名：<code>ejudge</code></li>
+<li>密码：<code>naive</code></li>
+</ul>
+</li>
+<li>
+<p>运行相关设置（更改以下设置需要重启服务器）</p>
+<ul>
 <li><code>TRACEBACK_LIMIT</code> 错误信息导出限制。</li>
 <li><code>COMPILE_MAX_TIME_FOR_TRUSTED</code> 判题程序最长编译时间（秒）。</li>
 <li><code>COMPILE_TIME_FACTOR</code> 提交程序的编译最多是时限的多少倍。</li>
 <li><code>REAL_TIME_FACTOR</code> 提交程序的总运行时长最多是时限的多少倍。</li>
 <li><code>MAX_WORKER_NUMBER</code> 最多运行多少个 worker，默认为核心数的 1/4。</li>
+<li><code>SECRET_KEY</code> 据说用于 socket 加密。</li>
+<li><code>USUAL_READ_SIZE</code> 编译错误信息读取多少字节</li>
+</ul>
+</li>
 </ul>
 <h2 id="_3">配置文件</h2>
 <p>配置文件在 <code>config/</code> 目录下。</p></div>
