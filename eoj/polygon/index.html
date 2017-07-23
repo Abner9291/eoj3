@@ -9,7 +9,7 @@
         
         <link rel="shortcut icon" href="../../img/favicon.ico">
 
-	<title>配置 - EOJ Docs</title>
+	<title>Polygon - EOJ Docs</title>
 
         <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
         <link href="../../css/font-awesome-4.0.3.css" rel="stylesheet">
@@ -56,13 +56,13 @@
             
             
             
-                <li class="dropdown">
+                <li class="dropdown active">
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown">Web 端 <b class="caret"></b></a>
                     <ul class="dropdown-menu">
                     
                         
-<li >
-    <a href="../../eoj/polygon/">Polygon</a>
+<li class="active">
+    <a href="./">Polygon</a>
 </li>
 
                     
@@ -71,25 +71,25 @@
             
             
             
-                <li class="dropdown active">
+                <li class="dropdown">
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown">判题服务器 <b class="caret"></b></a>
                     <ul class="dropdown-menu">
                     
                         
 <li >
-    <a href="../">简介</a>
+    <a href="../../ejudge/">简介</a>
 </li>
 
                     
                         
 <li >
-    <a href="../api/">API</a>
+    <a href="../../ejudge/api/">API</a>
 </li>
 
                     
                         
-<li class="active">
-    <a href="./">配置</a>
+<li >
+    <a href="../../ejudge/config/">配置</a>
 </li>
 
                     
@@ -107,12 +107,12 @@
                     </a>
                 </li>
                 <li >
-                    <a rel="next" href="../api/">
+                    <a rel="next" href="../..">
                         <i class="fa fa-arrow-left"></i> Previous
                     </a>
                 </li>
-                <li class="disabled">
-                    <a rel="prev" >
+                <li >
+                    <a rel="prev" href="../../ejudge/">
                         Next <i class="fa fa-arrow-right"></i>
                     </a>
                 </li>
@@ -126,42 +126,54 @@
             <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
     
-        <li class="main active"><a href="#_1">配置</a></li>
+        <li class="main active"><a href="#polygon">Polygon</a></li>
         
-            <li><a href="#_2">默认配置</a></li>
-        
-            <li><a href="#_3">配置文件</a></li>
+            <li><a href="#_1">权限控制</a></li>
         
     
     </ul>
 </div></div>
             <div class="col-md-9" role="main">
 
-<h1 id="_1">配置</h1>
-<h2 id="_2">默认配置</h2>
+<h1 id="polygon">Polygon</h1>
+<p>Polygon 是 EOJ 自带的命题系统。其附带功能包括权限管理、题目规范化、数据修复、数据验证、题目测试等等。</p>
+<p>EOJ Polygon 需要用户手动开通，开通是要满足至少一项要求：</p>
 <ul>
-<li>
-<p>初始密码：</p>
-<ul>
-<li>用户名：<code>ejudge</code></li>
-<li>密码：<code>naive</code></li>
+<li>过题 100 以上；</li>
+<li>拥有非普通用户权限（开通时）。</li>
 </ul>
-</li>
-<li>
-<p>运行相关设置（更改以下设置需要重启服务器）</p>
-<ul>
-<li><code>TRACEBACK_LIMIT</code> 错误信息导出限制。</li>
-<li><code>COMPILE_MAX_TIME_FOR_TRUSTED</code> 判题程序最长编译时间（秒）。</li>
-<li><code>COMPILE_TIME_FACTOR</code> 提交程序的编译最多是时限的多少倍。</li>
-<li><code>REAL_TIME_FACTOR</code> 提交程序的总运行时长最多是时限的多少倍。</li>
-<li><code>MAX_WORKER_NUMBER</code> 最多运行多少个 worker，默认为核心数的 1/4。</li>
-<li><code>SECRET_KEY</code> 据说用于 socket 加密。</li>
-<li><code>USUAL_READ_SIZE</code> 编译错误信息读取多少字节</li>
-</ul>
-</li>
-</ul>
-<h2 id="_3">配置文件</h2>
-<p>配置文件在 <code>config/</code> 目录下。</p></div>
+<h2 id="_1">权限控制</h2>
+<p>我们将 git 的概念引申一下：每个问题 (Problem) 都是一个 Repository，确切地说，是一个私有仓库。明确这一点后，下文将对题目和仓库的概念进行混用。</p>
+<p>我们先介绍用户对题目的权限的四种类型：</p>
+<ol>
+<li>ADMIN：管理员导入仓库后自动为 ADMIN，这一权限由仓库本身管理，不随管理员权限的改变而改变。除了必要时候删除 WRITE 权限的资格外，管理员权限和 OWNER 权限实际上是等价的。</li>
+<li>WRITE：如果创建仓库的人不是管理员，那么创建后权限即为 WRITE。具有 WRITE 权限的还可以邀请他人具有 WRITE/READ 权限，或者批准他人的 WRITE/READ 权限申请。</li>
+<li>READ: 顾名思义，只具有查看权限。</li>
+</ol>
+<p>用户在编辑问题时需要新建一个 EditSession（为方便起见，下面称为暂存区，不是翻译）。一个用户对一个问题只能拥有一个暂存区，对暂存区进行的更改都将被暂存。
+<strong>但这并不意味着可以回滚。</strong> 这些更改依然会对你暂存区内的文件生效，只不过，你只要不提交就不会成为正式的题目而已。</p>
+<p>对暂存区有两种操作：</p>
+<ol>
+<li>Synchronize (同步)：再次下载发布版的题目到暂存区</li>
+<li>Commit (提交)：提交更改到暂存区</li>
+</ol>
+<p>需要提醒的是，EOJ Polygon 没有对多人协作进行冲突处理，如果你要提交的暂存区不是主暂存区，恐怕你只能进行同步操作。这会抹掉相应的数据。所以正确的做法是：不要等到天荒地老再提交……</p>
+<p>有关主暂存区的更多内容，请看详解。</p>
+<p>用户 Commit 之后，可以用问题仓库中提供的 Problem ID 和 Alias (别名) 来访问到问题。问题在 Problemset 中默认是不可见的，要使它可见需要联系管理员。但用户可以创建比赛并使用题目。</p>
+<h3 id="_2">详解</h3>
+<p>用户创建仓库有两种方式：</p>
+<ol>
+<li>从现有仓库导入（fork）；</li>
+<li>创建新仓库。</li>
+</ol>
+<p>Polygon 管理基于文件系统（而不是数据库），每个题目，每个用户的 fork 都会作为一个单独的、独立的文件夹存放。这个文件夹便是暂存区。
+这个文件夹中不仅会包含问题的描述，相应的数据，配置信息（往往是 JSON），还包含一系列生成器、验证器等相关产物（下面会作具体解释）。
+但根据 EOJ Polygon 的规则，结合个人需要，不是所有的这些东西都会、都能够放到最终的题目中。这就造成了暂存区的实际存储内容比提交内容更丰富的情况。</p>
+<p>基于这点考虑，再加上老版本迁移等历史遗留问题的考虑，一个题目没有任何暂存区与之对应（老题目无人管理）。一旦有人管理，就一定会有一个是它的主暂存区。
+主暂存区并不是暂存区的一个属性，而是一种基于规则的定义：如果你的仓库的最后一次同步操作或提交操作是此问题所有暂存区中最晚的，那么你就是主暂存区。
+只有拥有主暂存区的且拥有写权限的用户才可以提交。</p>
+<p>在上面创建仓库的两种方式的第一种中，用户必须先具有读或写权限。如果是写权限，那么会创建一个新的暂存区；如果是读权限，则可以看到当前问题的所有暂存区；
+如果该问题没有任何已经创建的暂存区，系统会自动创建一个暂存区并归入批准操作的管理员的名下。</p></div>
         </div>
 
         <footer class="col-md-12">

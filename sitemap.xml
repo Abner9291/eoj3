@@ -4,7 +4,7 @@
     
     <url>
      <loc>/</loc>
-     <lastmod>2017-07-13</lastmod>
+     <lastmod>2017-07-23</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -12,20 +12,30 @@
     
         
     <url>
+     <loc>/eoj/polygon/</loc>
+     <lastmod>2017-07-23</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    
+
+    
+        
+    <url>
      <loc>/ejudge/</loc>
-     <lastmod>2017-07-13</lastmod>
+     <lastmod>2017-07-23</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>/ejudge/api/</loc>
-     <lastmod>2017-07-13</lastmod>
+     <lastmod>2017-07-23</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>/ejudge/config/</loc>
-     <lastmod>2017-07-13</lastmod>
+     <lastmod>2017-07-23</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
