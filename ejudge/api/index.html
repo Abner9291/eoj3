@@ -132,8 +132,6 @@
         
             <li><a href="#restful-api">RESTful API</a></li>
         
-            <li><a href="#socketio">Socket.io</a></li>
-        
     
     </ul>
 </div></div>
@@ -142,6 +140,8 @@
 <h1 id="api">API</h1>
 <h2 id="_1">快速检索</h2>
 <ul>
+<li><code>POST /config/token</code> 改密码</li>
+<li><code>GET /exist/case/:fid</code> 判断 Case 是否已经上传</li>
 <li><code>GET /ping</code> 如果成功，返回 pong</li>
 <li><code>POST /upload/case/:fid/:io</code> 上传测试用例，永久保存</li>
 <li><code>POST /upload/:type</code> 上传测试程序，永久保存</li>
@@ -156,6 +156,7 @@
 <li><code>POST /judge/checker</code> 返回程序输出检查器的运行结果</li>
 <li><code>POST /judge/interactor</code> 返回交互程序的运行结果</li>
 <li><code>POST /judge</code> 提交判题</li>
+<li><code>GET /query</code> 查询</li>
 </ul>
 <p>另有：socket.io <code>judge</code> 事件用于提交判题，格式与 <code>POST /judge</code> 相同。</p>
 <p>注：不建议删除的原因是：容易造成业务逻辑混乱。而且大多数提交程序占用空间并不大，定期清理即可。</p>
@@ -182,6 +183,18 @@ response = requests.post(url, json=data, auth=token).json()  # response is a dic
 </ul>
 <p><code>status</code> 和 <code>message</code> 有特殊含义的，会在 API 中注明。会返回其他键值对的，也会在 API 中注明。否则就按照上述标准。</p>
 <p>在文档中，字段名的含义是统一的。一旦解释过一次，下面的解释将从简处理。</p>
+<h3 id="post-configtoken"><code>POST /config/token</code></h3>
+<ul>
+<li><code>token</code> 新密码</li>
+</ul>
+<p>需要认证。</p>
+<h3 id="post-existcasefid"><code>POST /exist/case/:fid</code></h3>
+<p>返回</p>
+<pre><code class="json">{
+  &quot;exist&quot;: true
+}
+</code></pre>
+
 <h3 id="post-uploadcasefidio"><code>POST /upload/case/:fid/:io</code></h3>
 <ul>
 <li><code>:fid</code> 测试用例指纹。</li>
@@ -495,6 +508,7 @@ result = requests.post(url, data=open(input_file, 'rb').read(), auth=token).json
 <li><code>cases</code> 有序列表，测试用例指纹。返回结果也按照这个顺序</li>
 <li><code>checker</code> 输出检查程序指纹</li>
 <li><code>interactor</code> 交互题中的交互程序指纹</li>
+<li><code>hold</code> 可选，若指定 <code>hold</code> 为 <code>false</code> （默认为 <code>true</code>），则连接立即断开，之后要通过 <code>query</code> 查询结果。</li>
 </ul>
 <p>（最后几项必须预先上传）</p>
 <pre><code class="json">{
@@ -535,31 +549,9 @@ result = requests.post(url, data=open(input_file, 'rb').read(), auth=token).json
 </code></pre>
 
 <p>但对于 Runtime Error 的情况，错误信息是在 <code>detail</code> 中的每一次运行内的。</p>
-<h2 id="socketio">Socket.io</h2>
-<p>对于 socket.io，提供了 <code>judge</code> 事件，也就是上面的 <code>/judge</code> API。传入 JSON 几乎相同，但需要手动添加验证信息：</p>
-<pre><code class="python">data.update(username=token[0], password=token[1])
-</code></pre>
-
-<p>你可能需要监听 <code>judge_reply</code> 事件，因为回复都是这里来的。</p>
-<p>由于 Python 对于 socket.io 客户端的支持不佳，所以可能要用到不大好用的 socketio-client。然后可以直接 emit 字典哦。</p>
-<pre><code class="python">from socketIO_client import SocketIO, LoggingNamespace
-result = None
-
-def callback(*args):
-    nonlocal news_length, result
-    body = args[0]
-    if body.get('verdict') != Verdict.JUDGING.value:
-        result = body
-    # emit to user
-
-with SocketIO('localhost', 5000, LoggingNamespace) as socketIO:
-    socketIO.emit('judge', data)
-    socketIO.on('judge_reply', callback)
-    while not result:
-        socketIO.wait(seconds=1)
-</code></pre>
-
-<p>推荐的使用方案是，先使用 socket.io 进行判题，若失败，则回滚到 requests 请求。</p></div>
+<h3 id="get-query"><code>GET /query</code></h3>
+<p>示例：<code>/query?fingerprint=xxx</code></p>
+<p>返回结果同 <code>/judge</code></p></div>
         </div>
 
         <footer class="col-md-12">
